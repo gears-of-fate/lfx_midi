@@ -1,0 +1,7 @@
+* text=auto
+
+*.cpp text
+*.h text
+*.cmake text
+*.md text
+CMakeLists.txt text
