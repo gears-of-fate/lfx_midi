@@ -1,0 +1,4 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/lfx_midi-targets.cmake")
+check_required_components(lfx_midi)

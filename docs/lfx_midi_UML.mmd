@@ -1,133 +1,191 @@
+
 classDiagram
     direction TB
 
+    class ALaunchpad_h {
+        <<Static_Facade>>
+        +init_system(MidiInputCallback cb) bool
+        +shutdown_system() void
+        +pause_system() void
+        +resume_system() void
+        +pass_device_info(const lp_device_info& info) bool
+        +device_disconnected(const string& serial_number) bool
+        +pause_device(const string& serial_number) bool
+        +resume_device(const string& serial_number) bool
+        +pause_all_device() void
+        +resume_all_device() void
+        +get_jni_write_pointer(const string& serial_number) uint8_t*
+        +commit_frame(const string& serial_number) void
+    }
 
-namespace Driver_Layer_MIDI {
-class launchpad_h {
-<<Facade>>
-+init_system(IMidiTransport* transport, MidiInputCallback cb) bool
-+shutdown_system() void
-+pause_system() void
-+resume_system() void
-+pause_device() void
-+resume_device() void
-+pause_all_device() void
-+resume_all_device() void
-+pass_device_info(int id, bool is_mk3, std::string serial_number) void
-+device_disconnected(std::string serial_number) void
-+write_frame(std::string serial_number, std::vector~uint8_t~ data) void
-}
-class lp_device_info {
-<<Struct>>
-+int device_id
-+bool is_mk3
-+std::string serial_number;
-+AMidiInputPort* midi_in;   // I tuoi originali!
-+AMidiOutputPort* midi_out;
-}
-class IMidiTransport {
-<<Interface / Astrazione>>
-#MidiInputCallback m_callback
-+set_callback(MidiInputCallback cb) void
-+send_sysex(std::vector~uint8_t~ data)* void
-}
-class lp_transport_android {
-<<I/O Hardware NDK>>
--AMidiInputPort* midi_in
--AMidiOutputPort* midi_out
-+send_sysex(std::vector~uint8_t~ final_sysex) void
-+on_hardware_input(int pad_id, uint64_t timestamp) void
-}
-class lp_discovery {
-<<Manager>>
--std::unordered_map~std::string, unique_ptr~lp_instance~~ instances
--std::unordered_map~std::string, lp_triple_buffer*~ direct_buffers
-+on_device_connected(lp_device_info info, IMidiTransport* transport) void
-+on_device_disconnected(std::string serial_number) void
-+get_fast_buffer(std::string serial_number) lp_triple_buffer*
-+void lp_discovery::pause_specific_instance(const std::string& serial_number)
-+void lp_discovery::resume_specific_instance(const std::string& serial_number)
-+void lp_discovery::pause_all_instances()
-void lp_discovery::resume_all_instances()
-}
-class lp_instance {
-<<Thread Gameloop>>
--lp_device_info instance_info
--lp_triple_buffer m_buffer
--lp_pipeline pipeline
--std::thread gameloop_thread
--std::atomic~bool~ is_running
--std::atomic~bool~ is_paused
-+start() void
-+stop() void
-+resume(lp_device_info new_info)
-+pause(lp_device_info new_info)
-+get_triple_buffer() lp_triple_buffer*
--thread_execution() void
-}
-class lp_pipeline {
-<<Coordinatore>>
--lp_triple_buffer* buffer_sys
--lp_translator translator
--lp_dirty_check dirty_checker
--IMidiTransport* transport
-+process_frame() void
-}
-class lp_led {
-<<Struct>>
-+uint8_t r
-+uint8_t g
-+uint8_t b
-}
-class lp_arena {
-<<Accesso O(1)>>
-+lp_led leds[109]
-}
-class lp_triple_buffer {
-<<Lock-Free>>
--lp_arena write_buffer
--lp_arena staging_buffer
--lp_arena read_buffer
--std::atomic~bool~ frame_ready
-+get_jni_write_pointer() uint8_t*
-+commit_from_jni() void
-+get_read_buffer() const lp_arena*
-}
-class lp_translator {
-<<Namespace / Pure Functions>>
-+int MODEL_LAUNCHPAD_MK2$
-+int MODEL_LAUNCHPAD_PRO_MK3$
-+uint8_t CMD_RGB_LED$
--get_header_for_model(int device_model) std::vector~uint8_t~
-+get_programmer_mode_sysex(int device_model) std::vector~uint8_t~
-+build_frame_sysex(int device_model, const lp_arena* frame) std::vector~uint8_t~
-}
-class lp_dirty_check {
-<<Ottimizzatore>>
--std::vector~uint8_t~ last_frame
-+filter_unchanged(std::vector~uint8_t~ new_sysex) std::vector~uint8_t~
-+reset() void
-}
+    class lp_discovery {
+        -m_instances: unordered_map~string, unique_ptr~lp_instance~~
+        -m_direct_buffers: unordered_map~string, lp_triple_buffer*~
+        -m_mutex: mutable shared_mutex
+        +on_device_connected(const lp_device_info&, unique_ptr~IMidiTransport~) bool
+        +on_device_disconnected(const string&) bool
+        +get_fast_buffer(const string&) lp_triple_buffer*
+        +pause_specific_instance(const string&) bool
+        +resume_specific_instance(const string&) bool
+        +pause_all_instances() void
+        +resume_all_instances() void
+    }
+
+    class lp_instance {
+        -m_instance_info: lp_device_info
+        -m_transport: unique_ptr~IMidiTransport~
+        -m_buffer: lp_triple_buffer
+        -m_pipeline: lp_pipeline
+        -m_gameloop_thread: thread
+        -m_is_running: atomic~bool~
+        -m_is_paused: atomic~bool~
+        +lp_instance(const lp_device_info&, unique_ptr~IMidiTransport~)
+        +start() void
+        +stop() void
+        +pause() void
+        +resume() void
+        +get_triple_buffer() lp_triple_buffer*
+        -thread_execution() void
+    }
+
+    class lp_pipeline {
+        -m_buffer_sys: lp_triple_buffer*
+        -m_transport: IMidiTransport*
+        -m_model: e_lp_model
+        -m_dirty_checker: lp_dirty_check
+        -m_needs_reset: atomic~bool~
+        +lp_pipeline(lp_triple_buffer*, IMidiTransport*, e_lp_model)
+        +process_frame() void
+        +request_reset() void
+    }
+
+    class lp_dirty_check {
+        -m_last_arena: lp_arena
+        -m_is_first_arena: bool
+        -m_last_frame: vector~uint8_t~
+        +lp_dirty_check()
+        +filter_arena(const lp_arena* current_frame) const lp_arena*
+        +reset() void
+    }
+
+    class lp_triple_buffer {
+        -m_buffers: array~lp_arena, 3~
+        -m_write_index: atomic~uint8_t~
+        -m_read_index: atomic~uint8_t~
+        -m_staging_state: atomic~uint8_t~
+        +get_jni_write_pointer() uint8_t*
+        +commit_from_jni() void
+        +get_read_buffer() const lp_arena*
+        +is_frame_ready() bool
+    }
+
+    class lp_translator {
+        <<Static_Utility>>
+        -get_header_for_model: vector~uint8_t~
+        -start_new_sysex_chunk(std::vector<uint8_t>& chunk, e_lp_model model) void
+        +get_programmer_mode_sysex(e_lp_model) vector~uint8_t~
+        +get_live_mode_sysex(e_lp_model) vector~uint8_t~
+        +build_frame_sysex(e_lp_model, const lp_arena*) vector~vector~uint8_t~~
+        +is_valid_pad(e_lp_model, int) bool
+    }
+
+    class IMidiTransport {
+        <<Interface>>
+        +set_callback(MidiInputCallback cb)* void
+        +send_sysex(const vector~uint8_t~& data)* void
+        +start_listening()* void
+    }
+
+    class lp_transport_win {
+        -m_callback: MidiInputCallback
+        -m_midi_in: HMIDIIN
+        -m_midi_out: HMIDIOUT
+        -model: string
+        -s_midi_in_map: static map~HMIDIIN, lp_transport_win*~
+        +lp_transport_win(string, void*, void*)
+        +start_listening() void
+        +set_callback(MidiInputCallback cb) void
+        +send_sysex(const std::vector<uint8_t>& final_sysex) void
+        +midi_in_proc(HMIDIIN, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR) static void
+    }
+
+    class lp_transport_android {
+        -m_callback: MidiInputCallback
+        -m_midi_in: void*
+        -m_midi_out: void*
+        -model: string
+        -m_read_thread: thread
+        -m_is_running: atomic~bool~
+        +lp_transport_android(string, void*, void*)
+        +start_listening() void
+        +set_callback(MidiInputCallback cb) void
+        +send_sysex(const std::vector<uint8_t>& final_sysex) void
+        -read_thread_function() void
+    }
+
+    class lp_transport_factory {
+        <<Static_Utility>>
+        +create_transport(const lp_device_info&) unique_ptr~IMidiTransport~
+    }
+
+    class lp_device_info {
+        <<Data_Struct>>
+        +device_id: int
+        +model: e_lp_model
+        +serial_number: string
+        +midi_in: void*
+        +midi_out: void*
+    }
+
+    class lp_arena {
+        <<Data_Struct>>
+        +leds: lp_led[112]
+    }
+
+    class lp_led {
+        <<Data_Struct>>
+        +r: uint8_t
+        +g: uint8_t
+        +b: uint8_t
+    }
+
+    class e_lp_model{
+        <<Data_Struct>>
+        -LAUNCHPAD_PRO_MK3
+        -LAUNCHPAD_X
+        -LAUNCHPAD_MK3_MINI
+        -LAUNCHPAD_MK2
+        -LAUNCHPAD_PRO
     }
 
 
+    ALaunchpad_h ..> lp_discovery : manages
+    ALaunchpad_h ..> lp_device_info : uses
 
-%% --- LOGICA INTERNA LFX_MIDI (Gerarchia) ---
-launchpad_h --> lp_device_info
-launchpad_h --> lp_transport_android : Crea & Passa a init_system
-lp_transport_android --|> IMidiTransport : Implementa
+    lp_discovery "1" *-- "0..*" lp_instance : contains
+    lp_discovery ..> lp_device_info : uses
 
-lp_discovery *-- lp_instance : unique_ptr
-lp_discovery o-- lp_triple_buffer : puntatore diretto veloce
+    lp_instance "1" *-- "1" lp_pipeline : owns
+    lp_instance "1" *-- "1" lp_triple_buffer : owns
+    lp_instance "1" *-- "1" IMidiTransport : owns
+    lp_instance ..> lp_device_info : uses
 
-lp_instance *-- lp_pipeline
-lp_instance *-- lp_triple_buffer : Possiede allocazione memoria
+    lp_pipeline ..> lp_triple_buffer : reads from
+    lp_pipeline ..> IMidiTransport : sends to
+    lp_pipeline "1" *-- "1" lp_dirty_check : uses
+    lp_pipeline ..> lp_translator : uses
 
-lp_triple_buffer *-- "3" lp_arena
-lp_arena *-- "109" lp_led
+    lp_dirty_check ..> lp_arena : compares
 
-%% --- LOGICA INTERNA LFX_MIDI (Flusso Dati Pipeline) ---
-lp_pipeline --> lp_triple_buffer : 1. get_read_buffer()
-lp_pipeline --> lp_translator : 2. build_frame_sysex()
-lp_pipeline --> lp_dirty_check : 3. filter_unchanged()
-lp_pipeline --> IMidiTransport : 4. send_sysex()
+    lp_triple_buffer ..> lp_arena : contains
+    lp_translator ..> lp_arena : reads from
+
+    ALaunchpad_h ..> lp_transport_factory : uses
+    lp_transport_factory ..> IMidiTransport : creates
+    lp_transport_factory ..> lp_device_info : uses
+
+    IMidiTransport <|-- lp_transport_win
+    IMidiTransport <|-- lp_transport_android
+
+    lp_arena ..> lp_led
+    lp_device_info ..> e_lp_model
