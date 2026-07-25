@@ -103,3 +103,13 @@ void lp_discovery::resume_all_instances() {
         val->resume();
     }
 }
+
+std::vector<std::string> lp_discovery::get_all_device() {
+    LOG("lp_discovery::get_all_device");
+    std::vector<std::string> keys;
+    std::shared_lock lock(m_mutex);
+    for (const auto& key : m_instances | std::views::keys) {
+        keys.push_back(key);
+    }
+    return keys;
+}

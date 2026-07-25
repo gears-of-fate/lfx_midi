@@ -18,6 +18,7 @@
 #pragma once
 #include <unordered_map>
 #include <string>
+#include <vector>
 #include <memory>
 #include <shared_mutex>
 #include "lfx_midi/lp_device_info.h"
@@ -82,6 +83,12 @@ public:
      * @brief Resumes all paused device instances.
      */
     void resume_all_instances();
+
+    /**
+     * @brief Retrieves the serial numbers of all connected devices.
+     * @return A vector of strings, each representing a device's serial number.
+     */
+    std::vector<std::string> get_all_device();
 
 private:
     /// @brief Map of serial numbers to their corresponding device instances.

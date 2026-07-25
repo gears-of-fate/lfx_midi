@@ -8,8 +8,10 @@ cmake_install.cmake
 install_manifest.txt
 
 .idea/
+.idea
 
 .vscode/
+.vscode
 
 .vs/
 *.suo

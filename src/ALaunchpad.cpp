@@ -41,16 +41,6 @@ void ALaunchpad_h::shutdown_system() {
     g_callback = nullptr;
 }
 
-void ALaunchpad_h::pause_system() {
-    LOG("ALaunchpad_h::pause_system");
-    pause_all_device();
-}
-
-void ALaunchpad_h::resume_system() {
-    LOG("ALaunchpad_h::resume_system");
-    resume_all_device();
-}
-
 bool ALaunchpad_h::pass_device_info(const lp_device_info& info) {
     LOG("ALaunchpad_h::pass_device_info");
     if (!g_discovery) {
@@ -111,6 +101,12 @@ void ALaunchpad_h::pause_all_device() {
 void ALaunchpad_h::resume_all_device() {
     LOG("ALaunchpad_h::resume_all_device");
     if (g_discovery) g_discovery->resume_all_instances();
+}
+
+std::vector<std::string> ALaunchpad_h::get_all_device() {
+    LOG("ALaunchpad_h::get_all_device");
+    if (!g_discovery) return {};
+    return g_discovery->get_all_device();
 }
 
 uint8_t* ALaunchpad_h::get_jni_write_pointer(const std::string& serial_number) {

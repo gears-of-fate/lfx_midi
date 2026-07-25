@@ -17,6 +17,7 @@
 
 #pragma once
 #include <string>
+#include <vector>
 #include <cstdint>
 #include <functional>
 #include "lp_device_info.h"
@@ -49,17 +50,7 @@ public:
      * @brief Shuts down the entire system, releasing all resources.
      */
     static void shutdown_system();
-    
-    /**
-     * @brief Pauses the rendering threads of all connected devices.
-     */
-    static void pause_system();
 
-    /**
-     * @brief Resumes the rendering threads of all connected devices.
-     */
-    static void resume_system();
-    
     /**
      * @brief Registers a new Launchpad device with the system.
      * @param info A struct containing all necessary information about the device.
@@ -97,6 +88,12 @@ public:
      * @brief Resumes all currently paused devices.
      */
     static void resume_all_device();
+
+    /**
+     * @brief Retrieves the serial numbers of all connected devices.
+     * @return A vector of strings, each representing a device's serial number.
+     */
+    static std::vector<std::string> get_all_device();
 
     /**
      * @brief Gets a direct pointer to the write buffer for a specific device.
