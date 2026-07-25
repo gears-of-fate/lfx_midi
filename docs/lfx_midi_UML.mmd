@@ -6,14 +6,13 @@ classDiagram
         <<Static_Facade>>
         +init_system(MidiInputCallback cb) bool
         +shutdown_system() void
-        +pause_system() void
-        +resume_system() void
         +pass_device_info(const lp_device_info& info) bool
         +device_disconnected(const string& serial_number) bool
         +pause_device(const string& serial_number) bool
         +resume_device(const string& serial_number) bool
         +pause_all_device() void
         +resume_all_device() void
+        +get_all_device() std::vector<std::string>
         +get_jni_write_pointer(const string& serial_number) uint8_t*
         +commit_frame(const string& serial_number) void
     }
@@ -29,6 +28,7 @@ classDiagram
         +resume_specific_instance(const string&) bool
         +pause_all_instances() void
         +resume_all_instances() void
+        +get_all_device() std::vector<std::string>
     }
 
     class lp_instance {
