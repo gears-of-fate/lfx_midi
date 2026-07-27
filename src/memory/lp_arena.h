@@ -28,5 +28,5 @@
  */
 struct lp_arena {
     /// @brief An array holding the state of all LEDs. The size should be sufficient for the largest supported device.
-    std::array<lp_led, 128> leds;
+    std::array<lp_led, 112> leds;
 };
