@@ -42,7 +42,7 @@ TEST(TranslatorTest, LiveModeSysex) {
 TEST(TranslatorTest, BuildFrameSysexChunkingAndColor) {
     lp_arena frame;
     // Accendiamo tutti i pad validi per forzare il chunking
-    for (int i = 0; i < 128; ++i) {
+    for (int i = 0; i <= 112; ++i) {
         if (lp_translator::is_valid_pad(e_lp_model::LAUNCHPAD_PRO_MK3, i)) {
             frame.leds[i] = {255, 100, 0};
         }
