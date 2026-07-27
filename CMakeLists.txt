@@ -90,6 +90,7 @@ endif()
 
 if(LFX_MIDI_BUILD_SANDBOX)
     add_executable(lfx_midi_sandbox examples/main.cpp)
+    target_include_directories(lfx_midi_sandbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(lfx_midi_sandbox PRIVATE lfx_midi)
 
     if (WIN32)
@@ -127,3 +128,13 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/lfx_midi-config.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/lfx_midi"
 )
+
+set(CPACK_GENERATOR "ZIP")
+
+if (ANDROID)
+    set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-android-arm64")
+elseif (WIN32)
+    set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-windows-x64")
+endif()
+
+include(CPack)
