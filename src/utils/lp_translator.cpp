@@ -49,7 +49,7 @@ std::vector<uint8_t> lp_translator::get_header_for_model(e_lp_model model) {
 }
 
 bool lp_translator::is_valid_pad(e_lp_model model, int pad_index) {
-    if (pad_index < 0 || pad_index > 127) return false;
+    if (pad_index < 0 || pad_index > 112) return false;
     switch (model) {
         case e_lp_model::LAUNCHPAD_PRO_MK3:
             if (pad_index < 1 || pad_index > 108 || pad_index == 9 || pad_index == 100) return false;
@@ -59,7 +59,7 @@ bool lp_translator::is_valid_pad(e_lp_model model, int pad_index) {
             if (pad_index < 11 || pad_index > 99 || pad_index % 10 == 0) return false;
             break;
         case e_lp_model::LAUNCHPAD_MK2:
-            if (!(((pad_index >= 11 && pad_index <= 89) && (pad_index % 10 != 0)) || (pad_index >= 104 && pad_index <= 111))) return false;
+            if (!(((pad_index >= 11 && pad_index <= 89) && (pad_index % 10 != 0)) || pad_index >= 104)) return false;
             break;
         case e_lp_model::LAUNCHPAD_PRO:
             if (pad_index < 1 || pad_index > 98 || pad_index == 9 || pad_index == 90) return false;
